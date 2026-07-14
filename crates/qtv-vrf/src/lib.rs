@@ -9,7 +9,7 @@ pub mod lattice_based;
 pub use error::VrfError;
 
 /// Length in bytes of a function output, squeezed from SHAKE256.
-pub const OUTPUT_LEN: usize = 64;
+pub const OUTPUT_LEN: usize = 32;
 
 /// The pseudorandom output of the function for a given input.
 #[derive(Clone, PartialEq, Eq)]
