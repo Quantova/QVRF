@@ -72,3 +72,94 @@ impl Vrf for HashBasedVrf {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Public inputs of the reproducibility fixture. A reader who runs keygen on these three seeds
+    // and asks for the output over INPUT recovers RECORDED_OUTPUT byte for byte.
+    const SK_SEED: [u8; SEED_LEN] = [7u8; SEED_LEN];
+    const SK_PRF: [u8; SEED_LEN] = [8u8; SEED_LEN];
+    const PK_SEED: [u8; SEED_LEN] = [9u8; SEED_LEN];
+    const INPUT: &[u8] = b"quantova hash based vrf vector";
+
+    // The output recorded from the fixture above, written as plain decimal bytes.
+    const RECORDED_OUTPUT: [u8; OUTPUT_LEN] = [
+        239, 72, 177, 133, 162, 196, 155, 193, 5, 194, 185, 62, 75, 188, 30, 230, 141, 122, 211,
+        184, 141, 26, 164, 91, 22, 110, 232, 151, 73, 222, 2, 177,
+    ];
+
+    fn fixture() -> HashBasedVrf {
+        HashBasedVrf::keygen(&SK_SEED, &SK_PRF, &PK_SEED)
+    }
+
+    #[test]
+    fn output_matches_recorded_vector() {
+        let vrf = fixture();
+        let out = vrf.output(INPUT).unwrap();
+        assert_eq!(out.as_bytes(), &RECORDED_OUTPUT);
+    }
+
+    #[test]
+    fn output_is_deterministic() {
+        let vrf = fixture();
+        let first = vrf.output(INPUT).unwrap();
+        let second = vrf.output(INPUT).unwrap();
+        assert_eq!(first.as_bytes(), second.as_bytes());
+        assert_eq!(first.as_bytes(), &RECORDED_OUTPUT);
+    }
+
+    #[test]
+    fn verify_accepts_valid_pair() {
+        let vrf = fixture();
+        let out = vrf.output(INPUT).unwrap();
+        let proof = vrf.prove(INPUT).unwrap();
+        assert_eq!(vrf.verify(INPUT, &out, &proof), Ok(()));
+    }
+
+    #[test]
+    fn verify_rejects_wrong_output() {
+        let vrf = fixture();
+        let proof = vrf.prove(INPUT).unwrap();
+        let mut bytes = *vrf.output(INPUT).unwrap().as_bytes();
+        bytes[0] ^= 1;
+        let wrong = Output::from_bytes(bytes);
+        assert_eq!(
+            vrf.verify(INPUT, &wrong, &proof),
+            Err(VrfError::InvalidOutput)
+        );
+    }
+
+    #[test]
+    fn verify_rejects_wrong_proof() {
+        let vrf = fixture();
+        let out = vrf.output(INPUT).unwrap();
+        let mut signature = vrf.prove(INPUT).unwrap().signature().to_vec();
+        signature[0] ^= 1;
+        let tampered = Proof::new(signature, Vec::new());
+        assert_eq!(
+            vrf.verify(INPUT, &out, &tampered),
+            Err(VrfError::InvalidProof)
+        );
+    }
+
+    #[test]
+    fn verify_rejects_wrong_input() {
+        let vrf = fixture();
+        let out = vrf.output(INPUT).unwrap();
+        let proof = vrf.prove(INPUT).unwrap();
+        assert_eq!(
+            vrf.verify(b"a different input", &out, &proof),
+            Err(VrfError::InvalidProof)
+        );
+    }
+
+    #[test]
+    fn different_inputs_give_different_outputs() {
+        let vrf = fixture();
+        let first = vrf.output(b"first input").unwrap();
+        let second = vrf.output(b"second input").unwrap();
+        assert_ne!(first.as_bytes(), second.as_bytes());
+    }
+}
