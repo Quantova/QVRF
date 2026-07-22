@@ -10,8 +10,8 @@
 all-features = true
 
 [bans]
-multiple-versions = "warn"
-wildcards = "deny"
+multiple-versions = "deny"
+wildcards = "allow"
 deny = [
     "k256",
     "ed25519-dalek",
@@ -41,3 +41,6 @@ confidence-threshold = 0.9
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
+
+[sources.allow-org]
+github = ["Quantova"]
