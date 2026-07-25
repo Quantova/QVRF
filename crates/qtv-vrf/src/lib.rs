@@ -1,3 +1,6 @@
+// Copyright 2026 Quantova Inc
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
 //! qtv-vrf defines the verifiable random function interface for Quantova and the two
 
 #![forbid(unsafe_op_in_unsafe_fn)]

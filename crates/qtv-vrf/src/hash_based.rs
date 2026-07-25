@@ -1,3 +1,6 @@
+// Copyright 2026 Quantova Inc
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
 //! The hash based construction of the verifiable random function.
 
 use crate::{Output, Proof, Vrf, VrfError, OUTPUT_LEN};
