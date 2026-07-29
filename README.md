@@ -1,5 +1,7 @@
 # QVRF
 
+Deprecated, not wired into consensus. Kept for history and public cryptanalysis only.
+
 QVRF is the verifiable random function of Quantova and the first such function composed entirely from NIST standardized post quantum primitives. It replaces the elliptic curve construction of the classical standard with one built from ML DSA, SLH DSA, and SHA3, so the randomness that drives sortition survives a quantum attacker.
 
 Quantova is a sovereign post quantum Layer 1 built from scratch, sharing no code, no wire, and no trust assumption with any other chain. It is post quantum end to end and not a classical chain with a post quantum signature bolted on. QVRF supplies the sortition randomness for the QORUS consensus and the name service, and it verifies through a QVM opcode like every other cryptographic operation in the stack.

@@ -1,8 +1,12 @@
 // Copyright 2026 Quantova Inc
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! Deprecated, not wired into consensus.
 //! qtv-vrf defines the verifiable random function interface for Quantova and the two
 
+#![deprecated(
+    note = "QVRF is a grindable VRF construction and is unwired. Do not use it for consensus randomness. The sanctioned committee sortition is the one time key sortition in qtv-sampler of QRC-CONSENSUS."
+)]
 #![forbid(unsafe_op_in_unsafe_fn)]
 
 pub mod error;
