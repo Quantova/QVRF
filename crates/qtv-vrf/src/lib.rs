@@ -1,17 +1,10 @@
 // Copyright 2026 Quantova Inc
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Deprecated, not wired into consensus.
-//! qtv-vrf defines the verifiable random function interface for Quantova and the two
-
-#![deprecated(
-    note = "QVRF is a grindable VRF construction and is unwired. Do not use it for consensus randomness. The sanctioned committee sortition is the one time key sortition in qtv-sampler of QRC-CONSENSUS."
-)]
 #![forbid(unsafe_op_in_unsafe_fn)]
 
 pub mod error;
-pub mod hash_based;
-pub mod lattice_based;
+pub mod onetime;
 
 pub use error::VrfError;
 
@@ -64,14 +57,16 @@ impl Proof {
     }
 }
 
-/// A verifiable random function.
 pub trait Vrf {
-    /// Produce the output for an input.
-    fn output(&self, input: &[u8]) -> Result<Output, VrfError>;
+    fn output(&self, position: u64, input: &[u8]) -> Result<Output, VrfError>;
 
-    /// Produce the proof that the output for an input was derived correctly.
-    fn prove(&self, input: &[u8]) -> Result<Proof, VrfError>;
+    fn prove(&self, position: u64, input: &[u8]) -> Result<Proof, VrfError>;
 
-    /// Check an output and its proof against an input. Return Ok when the pair is valid.
-    fn verify(&self, input: &[u8], output: &Output, proof: &Proof) -> Result<(), VrfError>;
+    fn verify(
+        &self,
+        position: u64,
+        input: &[u8],
+        output: &Output,
+        proof: &Proof,
+    ) -> Result<(), VrfError>;
 }

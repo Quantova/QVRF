@@ -6,7 +6,7 @@ name = "qtv-vrf"
 version = "0.1.0"
 edition = "2021"
 license = "Apache-2.0 OR MIT"
-description = "The verifiable random function for Quantova, composed entirely from NIST post-quantum primitives, with a hash-based construction and a lattice-based construction behind one interface."
+description = "The verifiable random function for Quantova, built from NIST post quantum hash primitives as a one time key construction that commits a Merkle root over the per position secrets."
 repository = "https://github.com/Quantova/QVRF"
 rust-version = "1.75"
 
