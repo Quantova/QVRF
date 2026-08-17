@@ -5,6 +5,7 @@
 
 pub mod error;
 pub mod onetime;
+pub mod zk;
 
 pub use error::VrfError;
 
