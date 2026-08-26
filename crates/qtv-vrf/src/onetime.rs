@@ -3,6 +3,7 @@
 
 use crate::{Output, Proof, Vrf, VrfError, OUTPUT_LEN};
 use qtv_crypto::sha3::shake256;
+use core::sync::atomic::{compiler_fence, Ordering};
 
 const SECRET_LEN: usize = 32;
 const NODE_LEN: usize = 32;
@@ -14,12 +15,22 @@ const DOMAIN_OUTPUT: &[u8] = b"QVRF/v1/output";
 
 pub const MAX_HEIGHT: u32 = 24;
 
+/// Overwrite a secret buffer with zeros, kept past the optimizer so key material never lingers.
+fn wipe(bytes: &mut [u8]) {
+    for b in bytes.iter_mut() {
+        unsafe { core::ptr::write_volatile(b, 0) }
+    }
+    compiler_fence(Ordering::SeqCst);
+}
+
 fn hash(parts: &[&[u8]], out: &mut [u8]) {
-    let mut buf = Vec::new();
+    let total: usize = parts.iter().map(|p| p.len()).sum();
+    let mut buf = Vec::with_capacity(total);
     for part in parts {
         buf.extend_from_slice(part);
     }
     shake256(&buf, out);
+    wipe(&mut buf);
 }
 
 fn leaf_secret(master_seed: &[u8; SECRET_LEN], position: u64) -> [u8; SECRET_LEN] {
@@ -56,6 +67,14 @@ pub struct OneTimeVrf {
     root: [u8; NODE_LEN],
 }
 
+impl Drop for OneTimeVrf {
+    fn drop(&mut self) {
+        if let Some(seed) = self.master_seed.as_mut() {
+            wipe(seed);
+        }
+    }
+}
+
 impl OneTimeVrf {
     pub fn keygen(master_seed: &[u8; SECRET_LEN], height: u32) -> Result<Self, VrfError> {
         if height == 0 || height > MAX_HEIGHT {
@@ -63,7 +82,12 @@ impl OneTimeVrf {
         }
         let count = 1usize << height;
         let leaves: Vec<[u8; NODE_LEN]> = (0..count as u64)
-            .map(|position| leaf_commit(&leaf_secret(master_seed, position)))
+            .map(|position| {
+                let mut secret = leaf_secret(master_seed, position);
+                let commit = leaf_commit(&secret);
+                wipe(&mut secret);
+                commit
+            })
             .collect();
         let mut levels = vec![leaves];
         while levels.last().map(|l| l.len()).unwrap_or(0) > 1 {
@@ -130,8 +154,10 @@ impl Vrf for OneTimeVrf {
         if position >= self.positions() {
             return Err(VrfError::InvalidInput);
         }
-        let secret = leaf_secret(seed, position);
-        Ok(output_hash(&secret, input))
+        let mut secret = leaf_secret(seed, position);
+        let out = output_hash(&secret, input);
+        wipe(&mut secret);
+        Ok(out)
     }
 
     fn prove(&self, position: u64, _input: &[u8]) -> Result<Proof, VrfError> {
@@ -139,8 +165,10 @@ impl Vrf for OneTimeVrf {
         if position >= self.positions() {
             return Err(VrfError::InvalidInput);
         }
-        let secret = leaf_secret(seed, position);
-        Ok(Proof::new(secret.to_vec(), self.path_bytes(position)))
+        let mut secret = leaf_secret(seed, position);
+        let proof = Proof::new(secret.to_vec(), self.path_bytes(position));
+        wipe(&mut secret);
+        Ok(proof)
     }
 
     fn verify(
@@ -203,6 +231,17 @@ mod tests {
         let out = vrf.output(3, b"beacon").unwrap();
         let proof = vrf.prove(3, b"beacon").unwrap();
         assert_eq!(v.verify(3, b"beacon", &out, &proof), Ok(()));
+    }
+
+    #[test]
+    fn wiping_the_leaf_secret_preserves_the_round_trip() {
+        let vrf = key();
+        let v = verifier(&vrf);
+        for position in [0u64, 1, 7, 42, 200] {
+            let out = vrf.output(position, b"beacon").unwrap();
+            let proof = vrf.prove(position, b"beacon").unwrap();
+            assert_eq!(v.verify(position, b"beacon", &out, &proof), Ok(()));
+        }
     }
 
     #[test]
