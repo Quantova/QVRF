@@ -6,7 +6,23 @@ use qtv_crypto::sha3::shake256;
 use qtv_stark::field::{Felt, MODULUS};
 use qtv_stark::zkvrf::{self, OUT_ELEMS, SK_ELEMS, X_ELEMS};
 
+use core::sync::atomic::{compiler_fence, Ordering};
+
 pub const SEED_LEN: usize = 32;
+
+fn wipe_bytes(bytes: &mut [u8]) {
+    for b in bytes.iter_mut() {
+        unsafe { core::ptr::write_volatile(b, 0) }
+    }
+    compiler_fence(Ordering::SeqCst);
+}
+
+fn wipe_felts(felts: &mut [Felt]) {
+    for f in felts.iter_mut() {
+        unsafe { core::ptr::write_volatile(f, Felt::ZERO) }
+    }
+    compiler_fence(Ordering::SeqCst);
+}
 
 pub struct ZkDraw {
     pub output: [u8; SEED_LEN],
@@ -26,6 +42,8 @@ fn elems<const N: usize>(domain: &[u8], data: &[u8]) -> [Felt; N] {
         word.copy_from_slice(&bytes[i * 8..i * 8 + 8]);
         *cell = Felt::new(u64::from_le_bytes(word));
     }
+    wipe_bytes(&mut buf);
+    wipe_bytes(&mut bytes);
     out
 }
 
@@ -60,15 +78,23 @@ fn point(input: &[u8]) -> [Felt; X_ELEMS] {
 }
 
 pub fn commitment(seed: &[u8; SEED_LEN]) -> [u8; SEED_LEN] {
-    to_bytes(&zkvrf::vrf_commit(&key(seed)))
+    let mut sk = key(seed);
+    let out = to_bytes(&zkvrf::vrf_commit(&sk));
+    wipe_felts(&mut sk);
+    out
 }
 
 pub fn output(seed: &[u8; SEED_LEN], input: &[u8]) -> [u8; SEED_LEN] {
-    to_bytes(&zkvrf::vrf_output(&key(seed), &point(input)))
+    let mut sk = key(seed);
+    let out = to_bytes(&zkvrf::vrf_output(&sk, &point(input)));
+    wipe_felts(&mut sk);
+    out
 }
 
 pub fn prove(seed: &[u8; SEED_LEN], input: &[u8], context: &[u8]) -> ZkDraw {
-    let draw = zkvrf::prove(&key(seed), &point(input), context);
+    let mut sk = key(seed);
+    let draw = zkvrf::prove(&sk, &point(input), context);
+    wipe_felts(&mut sk);
     ZkDraw {
         output: to_bytes(&draw.output),
         commitment: to_bytes(&draw.commit),
