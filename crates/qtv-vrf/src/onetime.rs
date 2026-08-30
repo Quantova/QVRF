@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::{Output, Proof, Vrf, VrfError, OUTPUT_LEN};
-use qtv_crypto::sha3::shake256;
 use core::sync::atomic::{compiler_fence, Ordering};
+use qtv_crypto::sha3::shake256;
 
 const SECRET_LEN: usize = 32;
 const NODE_LEN: usize = 32;

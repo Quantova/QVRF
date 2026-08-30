@@ -1,7 +1,6 @@
 // Copyright 2026 Quantova Inc
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-
 use qtv_crypto::sha3::shake256;
 use qtv_stark::field::{Felt, MODULUS};
 use qtv_stark::zkvrf::{self, OUT_ELEMS, SK_ELEMS, X_ELEMS};
@@ -140,7 +139,13 @@ mod tests {
         let draw = prove(&seed(), b"slot-42", b"Q-net");
         assert_eq!(draw.output, output(&seed(), b"slot-42"));
         assert_eq!(draw.commitment, commitment(&seed()));
-        assert!(verify(&draw.commitment, b"slot-42", &draw.output, &draw.proof, b"Q-net"));
+        assert!(verify(
+            &draw.commitment,
+            b"slot-42",
+            &draw.output,
+            &draw.proof,
+            b"Q-net"
+        ));
     }
 
     #[test]
@@ -148,8 +153,26 @@ mod tests {
         let draw = prove(&seed(), b"slot-42", b"Q-net");
         let mut wrong = draw.output;
         wrong[0] ^= 1;
-        assert!(!verify(&draw.commitment, b"slot-42", &wrong, &draw.proof, b"Q-net"));
-        assert!(!verify(&draw.commitment, b"slot-42", &draw.output, &draw.proof, b"Q-other"));
-        assert!(!verify(&draw.commitment, b"slot-43", &draw.output, &draw.proof, b"Q-net"));
+        assert!(!verify(
+            &draw.commitment,
+            b"slot-42",
+            &wrong,
+            &draw.proof,
+            b"Q-net"
+        ));
+        assert!(!verify(
+            &draw.commitment,
+            b"slot-42",
+            &draw.output,
+            &draw.proof,
+            b"Q-other"
+        ));
+        assert!(!verify(
+            &draw.commitment,
+            b"slot-43",
+            &draw.output,
+            &draw.proof,
+            b"Q-net"
+        ));
     }
 }
