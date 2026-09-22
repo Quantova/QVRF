@@ -1,18 +1,12 @@
 // Copyright 2026 Quantova Inc
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! The error type returned by the verifiable random function operations.
-
 use core::fmt;
 
-/// An error returned by a verifiable random function operation.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum VrfError {
-    /// The input was rejected because it did not meet the expected shape.
     InvalidInput,
-    /// The proof did not match the output and the input.
     InvalidProof,
-    /// The output did not match the input under the given key.
     InvalidOutput,
 }
 

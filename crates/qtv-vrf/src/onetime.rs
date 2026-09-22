@@ -15,7 +15,6 @@ const DOMAIN_OUTPUT: &[u8] = b"QVRF/v1/output";
 
 pub const MAX_HEIGHT: u32 = 24;
 
-/// Overwrite a secret buffer with zeros, kept past the optimizer so key material never lingers.
 fn wipe(bytes: &mut [u8]) {
     for b in bytes.iter_mut() {
         unsafe { core::ptr::write_volatile(b, 0) }
