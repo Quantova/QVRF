@@ -12,6 +12,7 @@ const DOMAIN_LEAF_SECRET: &[u8] = b"QVRF/v1/leaf-secret";
 const DOMAIN_LEAF_COMMIT: &[u8] = b"QVRF/v1/leaf-commit";
 const DOMAIN_NODE: &[u8] = b"QVRF/v1/node";
 const DOMAIN_OUTPUT: &[u8] = b"QVRF/v1/output";
+const DOMAIN_ROOT: &[u8] = b"QVRF/v1/root";
 
 pub const MAX_HEIGHT: u32 = 24;
 
@@ -41,9 +42,26 @@ fn leaf_secret(master_seed: &[u8; SECRET_LEN], position: u64) -> [u8; SECRET_LEN
     out
 }
 
-fn leaf_commit(secret: &[u8]) -> [u8; NODE_LEN] {
+fn leaf_commit(position: u64, secret: &[u8]) -> [u8; NODE_LEN] {
     let mut out = [0u8; NODE_LEN];
-    hash(&[DOMAIN_LEAF_COMMIT, secret], &mut out);
+    hash(
+        &[DOMAIN_LEAF_COMMIT, &position.to_le_bytes(), secret],
+        &mut out,
+    );
+    out
+}
+
+pub fn bind_root(holder: u64, height: u32, inner: &[u8; NODE_LEN]) -> [u8; NODE_LEN] {
+    let mut out = [0u8; NODE_LEN];
+    hash(
+        &[
+            DOMAIN_ROOT,
+            &holder.to_le_bytes(),
+            &height.to_le_bytes(),
+            inner,
+        ],
+        &mut out,
+    );
     out
 }
 
@@ -63,6 +81,7 @@ pub struct OneTimeVrf {
     master_seed: Option<[u8; SECRET_LEN]>,
     levels: Vec<Vec<[u8; NODE_LEN]>>,
     height: u32,
+    holder: u64,
     root: [u8; NODE_LEN],
 }
 
@@ -75,7 +94,11 @@ impl Drop for OneTimeVrf {
 }
 
 impl OneTimeVrf {
-    pub fn keygen(master_seed: &[u8; SECRET_LEN], height: u32) -> Result<Self, VrfError> {
+    pub fn keygen(
+        master_seed: &[u8; SECRET_LEN],
+        height: u32,
+        holder: u64,
+    ) -> Result<Self, VrfError> {
         if height == 0 || height > MAX_HEIGHT {
             return Err(VrfError::InvalidInput);
         }
@@ -83,7 +106,7 @@ impl OneTimeVrf {
         let leaves: Vec<[u8; NODE_LEN]> = (0..count as u64)
             .map(|position| {
                 let mut secret = leaf_secret(master_seed, position);
-                let commit = leaf_commit(&secret);
+                let commit = leaf_commit(position, &secret);
                 wipe(&mut secret);
                 commit
             })
@@ -97,16 +120,17 @@ impl OneTimeVrf {
             }
             levels.push(next);
         }
-        let root = levels.last().expect("the fold ends at the root")[0];
+        let inner = levels.last().expect("the fold ends at the root")[0];
         Ok(Self {
             master_seed: Some(*master_seed),
             levels,
             height,
-            root,
+            holder,
+            root: bind_root(holder, height, &inner),
         })
     }
 
-    pub fn from_public(root: [u8; NODE_LEN], height: u32) -> Result<Self, VrfError> {
+    pub fn from_public(root: [u8; NODE_LEN], height: u32, holder: u64) -> Result<Self, VrfError> {
         if height == 0 || height > MAX_HEIGHT {
             return Err(VrfError::InvalidInput);
         }
@@ -114,6 +138,7 @@ impl OneTimeVrf {
             master_seed: None,
             levels: Vec::new(),
             height,
+            holder,
             root,
         })
     }
@@ -188,7 +213,7 @@ impl Vrf for OneTimeVrf {
         if path.len() != self.height as usize * NODE_LEN {
             return Err(VrfError::InvalidProof);
         }
-        let mut node = leaf_commit(secret);
+        let mut node = leaf_commit(position, secret);
         let mut idx = position as usize;
         for level in 0..self.height as usize {
             let start = level * NODE_LEN;
@@ -201,7 +226,7 @@ impl Vrf for OneTimeVrf {
             };
             idx >>= 1;
         }
-        if node != self.root {
+        if bind_root(self.holder, self.height, &node) != self.root {
             return Err(VrfError::InvalidProof);
         }
         if output_hash(secret, input) != *output {
@@ -215,12 +240,14 @@ impl Vrf for OneTimeVrf {
 mod tests {
     use super::*;
 
+    const HOLDER: u64 = 7;
+
     fn key() -> OneTimeVrf {
-        OneTimeVrf::keygen(&[7u8; SECRET_LEN], 8).unwrap()
+        OneTimeVrf::keygen(&[7u8; SECRET_LEN], 8, HOLDER).unwrap()
     }
 
     fn verifier(full: &OneTimeVrf) -> OneTimeVrf {
-        OneTimeVrf::from_public(*full.root(), full.height()).unwrap()
+        OneTimeVrf::from_public(*full.root(), full.height(), HOLDER).unwrap()
     }
 
     #[test]
