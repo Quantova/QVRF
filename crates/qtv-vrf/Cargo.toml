@@ -11,7 +11,7 @@ repository = "https://github.com/Quantova/QVRF"
 rust-version = "1.75"
 
 [dependencies]
-qtv-crypto = { git = "https://github.com/Quantova/Q-Crypto.git", rev = "37a7a4963888a4bb0854d346583e26928659aa63" }
+qtv-crypto = { git = "https://github.com/Quantova/Q-Crypto.git", rev = "44d820804a3d30cac41238b1dab1ca71bd195bf4" }
 qtv-stark = { git = "https://github.com/Quantova/q-prover.git", rev = "fcb670d61be5b6b7dd036b5ebf002ec7f215882b" }
 
 [dev-dependencies]
