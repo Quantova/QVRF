@@ -311,6 +311,27 @@ mod tests {
     }
 
     #[test]
+    fn one_proof_at_a_position_verifies_every_input_at_that_position() {
+        let vrf = key();
+        let v = verifier(&vrf);
+        let proof = vrf.prove(4, b"the input the protocol fixed").unwrap();
+
+        let elsewhere = vrf.output(4, b"an input nobody agreed to").unwrap();
+        assert!(
+            v.verify(4, b"an input nobody agreed to", &elsewhere, &proof)
+                .is_ok(),
+            "the proof carries the position and not the input, by construction"
+        );
+
+        let wrong_position = vrf.output(5, b"the input the protocol fixed").unwrap();
+        assert!(
+            v.verify(5, b"the input the protocol fixed", &wrong_position, &proof)
+                .is_err(),
+            "the position it does carry is still bound"
+        );
+    }
+
+    #[test]
     fn a_secret_from_another_position_does_not_verify_here() {
         let vrf = key();
         let v = verifier(&vrf);
