@@ -28,7 +28,7 @@ The crate wraps this behind a small byte interface, a key from a seed, a commitm
 
 ## The block beacon
 
-Alongside the per position function the specification defines a per block beacon that seeds each block. The beacon is SHAKE256 over the previous seed, the digest of the block's aggregated certificate, and the block height, and because the certificate is an artifact consensus already produces, the beacon costs the pipeline one hash rather than a new round. The beacon drives leader election. Its bias resistance is stated as a reduction and not as unconditional security. The beacon derives from the aggregated certificate rather than any single validator value, so no participant can bias it without controlling the supermajority that forms the certificate, which is breaking consensus itself.
+The per block beacon that seeds each block is defined by the consensus implementation in QRC-CONSENSUS, in qtv-sampler's beacon module, not by this crate. It is SHAKE256 over the previous seed, the slot, and the single committee reveal whose ticket is lowest, where a ticket is SHAKE256 over the previous seed, the slot and that reveal. It is not taken from the certificate or the block, because the leader chooses the block's contents and could grind them. A validator can move the beacon only by withholding its own reveal while that reveal holds the lowest ticket, so a coalition's choice is limited to its reveals that rank below every honest reveal. That bias is bounded and stated, not claimed away. The Quantova chain uses the one time tree in QRC-CONSENSUS's q-vrf crate; this repository is the standalone reference of the same construction.
 
 ## Published for cryptanalysis
 
