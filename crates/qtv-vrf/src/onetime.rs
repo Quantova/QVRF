@@ -14,7 +14,7 @@ const DOMAIN_NODE: &[u8] = b"QVRF/v1/node";
 const DOMAIN_OUTPUT: &[u8] = b"QVRF/v1/output";
 const DOMAIN_ROOT: &[u8] = b"QVRF/v1/root";
 
-pub const MAX_HEIGHT: u32 = 24;
+pub const MAX_HEIGHT: u32 = 16;
 
 fn wipe(bytes: &mut [u8]) {
     for b in bytes.iter_mut() {
