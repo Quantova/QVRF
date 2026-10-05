@@ -5,12 +5,12 @@ version = 3
 [[package]]
 name = "qtv-crypto"
 version = "0.3.0"
-source = "git+https://github.com/Quantova/Q-Crypto.git?rev=367547487c9ce07ca36293864308c117865a02ea#367547487c9ce07ca36293864308c117865a02ea"
+source = "git+https://github.com/Quantova/Q-Crypto.git?rev=12fefda211c5b7f8a8e9ed60e6a35d880da54c38#12fefda211c5b7f8a8e9ed60e6a35d880da54c38"
 
 [[package]]
 name = "qtv-stark"
 version = "0.1.0"
-source = "git+https://github.com/Quantova/q-prover.git?rev=91bb6e7e611b5e3fce58e9a02a26bbe60a2f056c#91bb6e7e611b5e3fce58e9a02a26bbe60a2f056c"
+source = "git+https://github.com/Quantova/q-prover.git?rev=bddf924e8e702bf72fd905b66558452c26520831#bddf924e8e702bf72fd905b66558452c26520831"
 dependencies = [
  "qtv-crypto",
 ]
